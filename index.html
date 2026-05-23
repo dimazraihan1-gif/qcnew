@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CV Putra Farma Yogyakarta</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <section class="login-screen" id="loginScreen">
+      <form class="login-card" id="loginForm">
+        <div>
+          <p class="eyebrow" id="authEyebrow">Login QC Produksi</p>
+          <h1>CV Putra Farma Yogyakarta</h1>
+        </div>
+        <div class="auth-tabs" role="tablist" aria-label="Pilih login atau daftar">
+          <button class="auth-tab active" id="loginModeBtn" type="button">Login</button>
+          <button class="auth-tab" id="registerModeBtn" type="button">Daftar Baru</button>
+        </div>
+        <label>
+          Nama Akun
+          <input id="loginUsername" type="text" autocomplete="username" placeholder="Contoh: qc-shift-1" required />
+        </label>
+        <label>
+          Password
+          <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Masukkan password" required />
+        </label>
+        <label class="register-only hidden">
+          Ulangi Password
+          <input id="confirmPassword" type="password" autocomplete="new-password" placeholder="Ulangi password" />
+        </label>
+        <p class="helper-text" id="authHelp">Masuk dengan akun yang sudah terdaftar di Supabase.</p>
+        <p class="login-error" id="loginError" role="alert"></p>
+        <button class="primary-button" id="authSubmitBtn" type="submit">Masuk</button>
+      </form>
+    </section>
+
+    <header class="app-header app-only hidden">
+      <div>
+        <p class="eyebrow">Aplikasi QC Produksi</p>
+        <h1>CV Putra Farma Yogyakarta</h1>
+      </div>
+      <div class="header-actions">
+        <span class="user-badge" id="activeUserBadge"></span>
+        <button class="ghost-button" id="exportBtn" type="button">Export CSV</button>
+        <button class="danger-button" id="resetBtn" type="button">Reset Data</button>
+        <button class="ghost-button" id="logoutBtn" type="button">Logout</button>
+      </div>
+    </header>
+
+    <main class="app-shell app-only hidden">
+      <section class="summary-grid" aria-label="Ringkasan laporan">
+        <article class="metric">
+          <span>Total Laporan</span>
+          <strong id="totalCount">0</strong>
+        </article>
+        <article class="metric warning">
+          <span>Menunggu QC</span>
+          <strong id="pendingCount">0</strong>
+        </article>
+        <article class="metric success">
+          <span>Sudah ACC</span>
+          <strong id="approvedCount">0</strong>
+        </article>
+        <article class="metric blocked">
+          <span>Revisi</span>
+          <strong id="revisionCount">0</strong>
+        </article>
+      </section>
+
+      <section class="work-area">
+        <form class="panel report-form" id="reportForm">
+          <div class="section-heading">
+            <p class="eyebrow">Input Divisi</p>
+            <h2>Laporan Baru</h2>
+          </div>
+
+          <label>
+            Divisi
+            <select id="division" required>
+              <option value="">Pilih divisi</option>
+              <option>Gudang Bahan Baku</option>
+              <option>Penimbangan</option>
+              <option>Mixing</option>
+              <option>Filling</option>
+              <option>Packing</option>
+              <option>Gudang Jadi</option>
+            </select>
+          </label>
+
+          <label>
+            Nama Produk / Batch
+            <input id="batchName" type="text" placeholder="Contoh: Jahe Merah B-2405" required />
+          </label>
+
+          <div class="field-row">
+            <label>
+              Jumlah
+              <input id="quantity" type="number" min="0" step="1" placeholder="0" required />
+            </label>
+            <label>
+              Satuan
+              <select id="unit" required>
+                <option>Sachet</option>
+                <option>Box</option>
+                <option>Kg</option>
+                <option>Karton</option>
+                <option>Batch</option>
+              </select>
+            </label>
+          </div>
+
+          <label>
+            Pelapor
+            <input id="reporter" type="text" placeholder="Nama operator / admin divisi" required />
+          </label>
+
+          <label>
+            Catatan Divisi
+            <textarea id="note" rows="3" placeholder="Tulis kondisi, kendala, atau keterangan singkat"></textarea>
+          </label>
+
+          <label>
+            Foto Bukti
+            <input id="photos" type="file" accept="image/*" multiple />
+          </label>
+          <div class="preview-grid" id="photoPreview"></div>
+
+          <label>
+            Dokumen Pendukung
+            <input id="documents" type="file" multiple />
+          </label>
+          <ul class="file-list" id="documentPreview"></ul>
+
+          <button class="primary-button" type="submit">Kirim ke QC</button>
+        </form>
+
+        <section class="panel board-panel">
+          <div class="board-top">
+            <div class="section-heading">
+              <p class="eyebrow">Monitoring</p>
+              <h2>Daftar Laporan</h2>
+            </div>
+            <div class="board-controls">
+              <label class="search-field">
+                Cari laporan
+                <input id="searchInput" type="search" placeholder="Cari batch, divisi, pelapor, catatan..." />
+              </label>
+              <label class="date-field">
+                Tanggal
+                <input id="dateInput" type="date" />
+              </label>
+              <div class="filter-group" role="tablist" aria-label="Filter waktu">
+                <button class="filter active" data-date-filter="all" type="button">Semua</button>
+                <button class="filter" data-date-filter="day" type="button">Hari Ini</button>
+                <button class="filter" data-date-filter="month" type="button">Bulan Ini</button>
+                <button class="filter" data-date-filter="year" type="button">Tahun Ini</button>
+              </div>
+            </div>
+          </div>
+          <div class="kanban-board" id="reportBoard">
+            <section class="kanban-column column-pending">
+              <div class="column-heading">
+                <h3>Perlu QC</h3>
+                <span id="pendingColumnCount">0</span>
+              </div>
+              <div class="report-list" id="pendingList"></div>
+            </section>
+            <section class="kanban-column column-revision">
+              <div class="column-heading">
+                <h3>Revisi</h3>
+                <span id="revisionColumnCount">0</span>
+              </div>
+              <div class="report-list" id="revisionList"></div>
+            </section>
+            <section class="kanban-column column-done">
+              <div class="column-heading">
+                <h3>Selesai</h3>
+                <span id="doneColumnCount">0</span>
+              </div>
+              <div class="report-list" id="doneList"></div>
+            </section>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <dialog class="qc-modal" id="qcModal">
+      <form method="dialog" class="modal-card">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow">Review QC</p>
+            <h2 id="modalTitle">Laporan</h2>
+          </div>
+          <button class="icon-button" value="cancel" aria-label="Tutup" type="submit">x</button>
+        </div>
+
+        <div class="modal-body">
+          <dl class="detail-list" id="modalDetails"></dl>
+
+          <label>
+            Catatan QC
+            <textarea id="qcNote" rows="3" placeholder="Contoh: fisik OK, berat sesuai, label sesuai"></textarea>
+          </label>
+
+          <div class="signature-wrap">
+            <div class="signature-top">
+              <span>Tanda Tangan QC</span>
+              <button class="ghost-button small" id="clearSignature" type="button">Hapus</button>
+            </div>
+            <canvas id="signatureCanvas" width="720" height="220"></canvas>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="danger-button" id="revisionBtn" value="cancel" type="button">Minta Revisi</button>
+          <button class="primary-button" id="approveBtn" value="default" type="button">ACC dan Lanjut</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="qc-modal" id="editModal">
+      <form class="modal-card" id="editForm">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow">Perbaikan Revisi</p>
+            <h2 id="editModalTitle">Edit Laporan</h2>
+          </div>
+          <button class="icon-button" value="cancel" aria-label="Tutup" type="button" id="closeEditModal">x</button>
+        </div>
+
+        <div class="modal-body">
+          <label>
+            Divisi
+            <select id="editDivision" required>
+              <option>Gudang Bahan Baku</option>
+              <option>Penimbangan</option>
+              <option>Mixing</option>
+              <option>Filling</option>
+              <option>Packing</option>
+              <option>Gudang Jadi</option>
+            </select>
+          </label>
+
+          <label>
+            Nama Produk / Batch
+            <input id="editBatchName" type="text" required />
+          </label>
+
+          <div class="field-row">
+            <label>
+              Jumlah
+              <input id="editQuantity" type="number" min="0" step="1" required />
+            </label>
+            <label>
+              Satuan
+              <select id="editUnit" required>
+                <option>Sachet</option>
+                <option>Box</option>
+                <option>Kg</option>
+                <option>Karton</option>
+                <option>Batch</option>
+              </select>
+            </label>
+          </div>
+
+          <label>
+            Pelapor
+            <input id="editReporter" type="text" required />
+          </label>
+
+          <label>
+            Catatan Divisi
+            <textarea id="editNote" rows="3"></textarea>
+          </label>
+
+          <div class="revision-note-box">
+            <strong>Catatan QC sebelumnya</strong>
+            <p id="editQcNote">-</p>
+          </div>
+
+          <label>
+            Ganti Foto Bukti
+            <input id="editPhotos" type="file" accept="image/*" multiple />
+          </label>
+          <p class="helper-text">Kosongkan jika foto lama tetap dipakai.</p>
+
+          <label>
+            Ganti Dokumen Pendukung
+            <input id="editDocuments" type="file" multiple />
+          </label>
+          <p class="helper-text">Kosongkan jika dokumen lama tetap dipakai.</p>
+        </div>
+
+        <div class="modal-actions">
+          <button class="ghost-button" id="cancelEditBtn" type="button">Batal</button>
+          <button class="primary-button" type="submit">Simpan dan Kirim Ulang ke QC</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="qc-modal" id="previewModal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow">Preview Selesai</p>
+            <h2 id="previewModalTitle">Laporan Selesai</h2>
+          </div>
+          <button class="icon-button" aria-label="Tutup" type="button" id="closePreviewModal">x</button>
+        </div>
+
+        <div class="modal-body" id="previewBody"></div>
+
+        <div class="modal-actions">
+          <button class="primary-button" id="closePreviewBtn" type="button">Tutup</button>
+        </div>
+      </div>
+    </dialog>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
