@@ -31,10 +31,7 @@ const registerModeBtn = document.querySelector("#registerModeBtn");
 const registerOnlyElements = document.querySelectorAll(".register-only");
 const appOnlyElements = document.querySelectorAll(".app-only");
 const form = document.querySelector("#reportForm");
-const reportBoard = document.querySelector("#reportBoard");
-const pendingList = document.querySelector("#pendingList");
-const revisionList = document.querySelector("#revisionList");
-const doneList = document.querySelector("#doneList");
+const reportList = document.querySelector("#reportList");
 const photoInput = document.querySelector("#photos");
 const documentInput = document.querySelector("#documents");
 const photoPreview = document.querySelector("#photoPreview");
@@ -69,6 +66,7 @@ let activeUser = null;
 let activeUsername = "";
 let reports = [];
 let activeDateFilter = "all";
+let activeStatusFilter = "Menunggu QC";
 let selectedDate = "";
 let searchQuery = "";
 let authMode = "login";
@@ -316,6 +314,18 @@ function statusClass(status) {
   return "status-pending";
 }
 
+function cardStatusClass(status) {
+  if (status === "ACC QC") return "card-approved";
+  if (status === "Revisi") return "card-revision";
+  return "card-pending";
+}
+
+function statusLabel(status) {
+  if (status === "ACC QC") return "Selesai";
+  if (status === "Revisi") return "Reject";
+  return "Perlu QC";
+}
+
 function matchesDateFilter(report) {
   if (selectedDate) {
     return toDateInputValue(report.createdAt) === selectedDate;
@@ -344,7 +354,11 @@ function toDateInputValue(value) {
 }
 
 function getVisibleReports() {
-  return reports.filter(matchesDateFilter).filter(matchesSearch);
+  return reports.filter(matchesDateFilter).filter(matchesSearch).filter(matchesStatusFilter);
+}
+
+function matchesStatusFilter(report) {
+  return report.status === activeStatusFilter;
 }
 
 function matchesSearch(report) {
@@ -422,53 +436,38 @@ async function handleSubmit(event) {
 }
 
 function renderSummary() {
-  const visibleReports = getVisibleReports();
-  document.querySelector("#totalCount").textContent = visibleReports.length;
-  document.querySelector("#pendingCount").textContent = visibleReports.filter((item) => item.status === "Menunggu QC").length;
-  document.querySelector("#approvedCount").textContent = visibleReports.filter((item) => item.status === "ACC QC").length;
-  document.querySelector("#revisionCount").textContent = visibleReports.filter((item) => item.status === "Revisi").length;
+  const filteredReports = reports.filter(matchesDateFilter).filter(matchesSearch);
+  document.querySelector("#totalCount").textContent = filteredReports.length;
+  document.querySelector("#pendingCount").textContent = filteredReports.filter((item) => item.status === "Menunggu QC").length;
+  document.querySelector("#approvedCount").textContent = filteredReports.filter((item) => item.status === "ACC QC").length;
+  document.querySelector("#revisionCount").textContent = filteredReports.filter((item) => item.status === "Revisi").length;
 }
 
 function renderReports() {
-  const columns = [
-    {
-      list: pendingList,
-      counter: document.querySelector("#pendingColumnCount"),
-      reports: getVisibleReports().filter((item) => item.status === "Menunggu QC"),
-    },
-    {
-      list: revisionList,
-      counter: document.querySelector("#revisionColumnCount"),
-      reports: getVisibleReports().filter((item) => item.status === "Revisi"),
-    },
-    {
-      list: doneList,
-      counter: document.querySelector("#doneColumnCount"),
-      reports: getVisibleReports().filter((item) => item.status === "ACC QC"),
-    },
-  ];
+  const filteredReports = reports.filter(matchesDateFilter).filter(matchesSearch);
+  document.querySelector("#pendingColumnCount").textContent = filteredReports.filter((item) => item.status === "Menunggu QC").length;
+  document.querySelector("#revisionColumnCount").textContent = filteredReports.filter((item) => item.status === "Revisi").length;
+  document.querySelector("#doneColumnCount").textContent = filteredReports.filter((item) => item.status === "ACC QC").length;
 
-  columns.forEach((column) => {
-    column.list.innerHTML = "";
-    column.counter.textContent = column.reports.length;
+  const visibleReports = getVisibleReports();
+  reportList.innerHTML = "";
 
-    if (column.reports.length === 0) {
-      const empty = document.createElement("div");
-      empty.className = "empty-state";
-      empty.textContent = "Belum ada laporan.";
-      column.list.append(empty);
-      return;
-    }
+  if (visibleReports.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = `Belum ada laporan ${statusLabel(activeStatusFilter)}.`;
+    reportList.append(empty);
+    return;
+  }
 
-    column.reports.forEach((report) => {
-      column.list.append(createReportCard(report));
-    });
+  visibleReports.forEach((report) => {
+    reportList.append(createReportCard(report));
   });
 }
 
 function createReportCard(report) {
   const card = document.createElement("article");
-  card.className = "report-card";
+  card.className = `report-card ${cardStatusClass(report.status)}`;
 
   const photos = report.photos
     .slice(0, 4)
@@ -513,7 +512,7 @@ function createReportCard(report) {
           <strong>${escapeHtml(report.batchName)}</strong>
           <span>${escapeHtml(report.division)} - ${formatDate(report.createdAt)}</span>
         </div>
-        <span class="status-pill ${statusClass(report.status)}">${report.status}</span>
+        <span class="status-pill ${statusClass(report.status)}">${statusLabel(report.status)}</span>
       </div>
       <div class="meta-grid">
         <div><span>Jumlah</span><br><strong>${escapeHtml(report.quantity)} ${escapeHtml(report.unit)}</strong></div>
@@ -978,7 +977,16 @@ document.querySelectorAll("[data-date-filter]").forEach((button) => {
   });
 });
 
-reportBoard.addEventListener("click", (event) => {
+document.querySelectorAll("[data-status-filter]").forEach((button) => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll("[data-status-filter]").forEach((item) => item.classList.remove("active"));
+    button.classList.add("active");
+    activeStatusFilter = button.dataset.statusFilter;
+    render();
+  });
+});
+
+reportList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-review]");
   if (button) openReview(button.dataset.review);
 

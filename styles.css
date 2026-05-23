@@ -1,5 +1,5 @@
 :root {
-  --bg: #f6f7f9;
+  --bg: #eef3f5;
   --surface: #ffffff;
   --ink: #20242c;
   --muted: #667085;
@@ -11,6 +11,7 @@
   --success: #16794c;
   --danger: #b42318;
   --shadow: 0 14px 36px rgba(20, 29, 45, 0.08);
+  --soft-shadow: 0 8px 22px rgba(20, 29, 45, 0.06);
 }
 
 * {
@@ -48,6 +49,7 @@ button {
   min-height: 104px;
   padding: 24px clamp(18px, 5vw, 56px);
   gap: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .login-screen {
@@ -198,7 +200,7 @@ button {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--soft-shadow);
   padding: 20px;
 }
 
@@ -348,11 +350,15 @@ textarea {
 
 .board-panel {
   min-width: 0;
+  overflow: hidden;
 }
 
 .board-top {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--line);
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin: -20px -20px 16px;
+  padding: 20px;
 }
 
 .board-controls {
@@ -377,6 +383,73 @@ textarea {
   background: #e8f4f1;
   border-color: #9ccbc1;
   color: var(--primary-dark);
+}
+
+.status-tabs {
+  background: #f4f7f9;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 16px;
+  padding: 8px;
+}
+
+.status-tab {
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 10px 12px;
+}
+
+.status-tab span {
+  font-weight: 800;
+}
+
+.status-tab strong {
+  border-radius: 999px;
+  color: #fff;
+  min-width: 32px;
+  padding: 5px 9px;
+  text-align: center;
+}
+
+.status-tab-pending strong {
+  background: var(--warning);
+}
+
+.status-tab-revision strong {
+  background: var(--danger);
+}
+
+.status-tab-done strong {
+  background: var(--success);
+}
+
+.status-tab.active {
+  box-shadow: var(--soft-shadow);
+  color: var(--ink);
+}
+
+.status-tab-pending.active {
+  border-color: #e3b067;
+  background: #fff8ed;
+}
+
+.status-tab-revision.active {
+  border-color: #efa49e;
+  background: #fff4f2;
+}
+
+.status-tab-done.active {
+  border-color: #91d1b0;
+  background: #effaf5;
 }
 
 .kanban-board {
@@ -453,6 +526,10 @@ textarea {
   gap: 12px;
 }
 
+.report-list-modern {
+  gap: 14px;
+}
+
 .empty-state {
   border: 1px dashed var(--line);
   border-radius: 8px;
@@ -468,18 +545,19 @@ textarea {
   border-radius: 8px;
   display: grid;
   gap: 14px;
-  padding: 14px;
+  padding: 16px;
+  box-shadow: 0 6px 18px rgba(20, 29, 45, 0.04);
 }
 
-.column-pending .report-card {
+.card-pending {
   border-left-color: var(--warning);
 }
 
-.column-revision .report-card {
+.card-revision {
   border-left-color: var(--danger);
 }
 
-.column-done .report-card {
+.card-approved {
   border-left-color: var(--success);
 }
 
@@ -532,7 +610,7 @@ textarea {
 .meta-grid {
   display: grid;
   gap: 8px;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .thumb-row {
@@ -677,6 +755,10 @@ textarea {
   }
 
   .kanban-board {
+    grid-template-columns: 1fr;
+  }
+
+  .status-tabs {
     grid-template-columns: 1fr;
   }
 

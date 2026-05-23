@@ -63,7 +63,7 @@
           <strong id="approvedCount">0</strong>
         </article>
         <article class="metric blocked">
-          <span>Revisi</span>
+          <span>Reject</span>
           <strong id="revisionCount">0</strong>
         </article>
       </section>
@@ -158,29 +158,21 @@
               </div>
             </div>
           </div>
-          <div class="kanban-board" id="reportBoard">
-            <section class="kanban-column column-pending">
-              <div class="column-heading">
-                <h3>Perlu QC</h3>
-                <span id="pendingColumnCount">0</span>
-              </div>
-              <div class="report-list" id="pendingList"></div>
-            </section>
-            <section class="kanban-column column-revision">
-              <div class="column-heading">
-                <h3>Revisi</h3>
-                <span id="revisionColumnCount">0</span>
-              </div>
-              <div class="report-list" id="revisionList"></div>
-            </section>
-            <section class="kanban-column column-done">
-              <div class="column-heading">
-                <h3>Selesai</h3>
-                <span id="doneColumnCount">0</span>
-              </div>
-              <div class="report-list" id="doneList"></div>
-            </section>
+          <div class="status-tabs" role="tablist" aria-label="Filter status laporan">
+            <button class="status-tab active status-tab-pending" data-status-filter="Menunggu QC" type="button">
+              <span>Perlu QC</span>
+              <strong id="pendingColumnCount">0</strong>
+            </button>
+            <button class="status-tab status-tab-revision" data-status-filter="Revisi" type="button">
+              <span>Reject</span>
+              <strong id="revisionColumnCount">0</strong>
+            </button>
+            <button class="status-tab status-tab-done" data-status-filter="ACC QC" type="button">
+              <span>Selesai</span>
+              <strong id="doneColumnCount">0</strong>
+            </button>
           </div>
+          <div class="report-list report-list-modern" id="reportList"></div>
         </section>
       </section>
     </main>
@@ -213,7 +205,7 @@
         </div>
 
         <div class="modal-actions">
-          <button class="danger-button" id="revisionBtn" value="cancel" type="button">Minta Revisi</button>
+          <button class="danger-button" id="revisionBtn" value="cancel" type="button">Reject</button>
           <button class="primary-button" id="approveBtn" value="default" type="button">ACC dan Lanjut</button>
         </div>
       </form>
