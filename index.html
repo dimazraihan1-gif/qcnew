@@ -124,6 +124,15 @@
             Foto Bukti
             <input id="photos" type="file" accept="image/*" multiple />
           </label>
+          <div class="camera-actions">
+            <button class="ghost-button" id="openCameraBtn" type="button">Buka Kamera</button>
+            <button class="primary-button hidden" id="capturePhotoBtn" type="button">Ambil Foto</button>
+            <button class="ghost-button hidden" id="closeCameraBtn" type="button">Tutup Kamera</button>
+          </div>
+          <div class="camera-box hidden" id="cameraBox">
+            <video id="cameraVideo" autoplay playsinline></video>
+            <canvas id="cameraCanvas" class="hidden"></canvas>
+          </div>
           <div class="preview-grid" id="photoPreview"></div>
 
           <label>

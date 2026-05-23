@@ -36,6 +36,12 @@ const photoInput = document.querySelector("#photos");
 const documentInput = document.querySelector("#documents");
 const photoPreview = document.querySelector("#photoPreview");
 const documentPreview = document.querySelector("#documentPreview");
+const openCameraBtn = document.querySelector("#openCameraBtn");
+const capturePhotoBtn = document.querySelector("#capturePhotoBtn");
+const closeCameraBtn = document.querySelector("#closeCameraBtn");
+const cameraBox = document.querySelector("#cameraBox");
+const cameraVideo = document.querySelector("#cameraVideo");
+const cameraCanvas = document.querySelector("#cameraCanvas");
 const qcModal = document.querySelector("#qcModal");
 const modalTitle = document.querySelector("#modalTitle");
 const modalDetails = document.querySelector("#modalDetails");
@@ -73,6 +79,8 @@ let authMode = "login";
 let activeReportId = null;
 let activeEditReportId = null;
 let signatureHasInk = false;
+let cameraStream = null;
+let cameraPhotos = [];
 
 function normalizeUsername(value) {
   return value.trim().toLowerCase();
@@ -389,6 +397,12 @@ function updatePreviews() {
     img.src = URL.createObjectURL(file);
     photoPreview.append(img);
   });
+  cameraPhotos.forEach((file) => {
+    const img = document.createElement("img");
+    img.alt = file.name;
+    img.src = URL.createObjectURL(file);
+    photoPreview.append(img);
+  });
 
   documentPreview.innerHTML = "";
   [...documentInput.files].forEach((file) => {
@@ -398,12 +412,67 @@ function updatePreviews() {
   });
 }
 
+async function openCamera() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    alert("Browser/perangkat ini belum mendukung akses kamera.");
+    return;
+  }
+
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: "environment" },
+      },
+      audio: false,
+    });
+    cameraVideo.srcObject = cameraStream;
+    cameraBox.classList.remove("hidden");
+    capturePhotoBtn.classList.remove("hidden");
+    closeCameraBtn.classList.remove("hidden");
+    openCameraBtn.classList.add("hidden");
+  } catch {
+    alert("Kamera tidak bisa dibuka. Pastikan izin kamera sudah diberikan.");
+  }
+}
+
+function closeCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach((track) => track.stop());
+  }
+  cameraStream = null;
+  cameraVideo.srcObject = null;
+  cameraBox.classList.add("hidden");
+  capturePhotoBtn.classList.add("hidden");
+  closeCameraBtn.classList.add("hidden");
+  openCameraBtn.classList.remove("hidden");
+}
+
+function captureCameraPhoto() {
+  if (!cameraStream) return;
+
+  const width = cameraVideo.videoWidth || 1280;
+  const height = cameraVideo.videoHeight || 960;
+  cameraCanvas.width = width;
+  cameraCanvas.height = height;
+  const ctx = cameraCanvas.getContext("2d");
+  ctx.drawImage(cameraVideo, 0, 0, width, height);
+  cameraCanvas.toBlob((blob) => {
+    if (!blob) return;
+    const file = new File([blob], `kamera-${new Date().toISOString().replace(/[:.]/g, "-")}.jpg`, {
+      type: "image/jpeg",
+    });
+    cameraPhotos.push(file);
+    updatePreviews();
+  }, "image/jpeg", 0.88);
+}
+
 async function handleSubmit(event) {
   event.preventDefault();
   const reportId = crypto.randomUUID();
+  const selectedPhotos = [...photoInput.files, ...cameraPhotos];
 
   const photos = await Promise.all(
-    [...photoInput.files].map((file) => uploadAttachment(file, reportId, "photos")),
+    selectedPhotos.map((file) => uploadAttachment(file, reportId, "photos")),
   );
 
   const documents = await Promise.all(
@@ -431,6 +500,8 @@ async function handleSubmit(event) {
   await saveReport(report);
   await hydrateAttachmentUrls([report]);
   form.reset();
+  cameraPhotos = [];
+  closeCamera();
   updatePreviews();
   render();
 }
@@ -930,6 +1001,9 @@ function exportCsv() {
 
 photoInput.addEventListener("change", updatePreviews);
 documentInput.addEventListener("change", updatePreviews);
+openCameraBtn.addEventListener("click", openCamera);
+capturePhotoBtn.addEventListener("click", captureCameraPhoto);
+closeCameraBtn.addEventListener("click", closeCamera);
 form.addEventListener("submit", handleSubmit);
 approveBtn.addEventListener("click", () => updateReportStatus("ACC QC"));
 revisionBtn.addEventListener("click", () => updateReportStatus("Revisi"));
