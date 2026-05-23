@@ -501,7 +501,10 @@ function createReportCard(report) {
     report.status === "Revisi"
       ? `<button class="primary-button" data-edit="${report.id}" type="button">Perbaiki</button>`
       : report.status === "ACC QC"
-        ? `<button class="primary-button" data-preview="${report.id}" type="button">Preview</button>`
+        ? `
+          <button class="ghost-button" data-pdf="${report.id}" type="button">Download PDF</button>
+          <button class="primary-button" data-preview="${report.id}" type="button">Preview</button>
+        `
       : `<button class="primary-button" data-review="${report.id}" type="button">Review QC</button>`;
 
   card.innerHTML = `
@@ -699,6 +702,100 @@ function openPreview(reportId) {
   previewModal.showModal();
 }
 
+function addPdfText(doc, label, value, x, y, maxWidth = 160) {
+  doc.setFont("helvetica", "bold");
+  doc.text(label, x, y);
+  doc.setFont("helvetica", "normal");
+  const lines = doc.splitTextToSize(value || "-", maxWidth);
+  doc.text(lines, x + 38, y);
+  return y + Math.max(lines.length, 1) * 6;
+}
+
+function addWrappedSection(doc, title, value, y) {
+  doc.setFont("helvetica", "bold");
+  doc.text(title, 16, y);
+  doc.setFont("helvetica", "normal");
+  const lines = doc.splitTextToSize(value || "-", 178);
+  doc.text(lines, 16, y + 7);
+  return y + 13 + lines.length * 5;
+}
+
+async function downloadReportPdf(reportId) {
+  const report = reports.find((item) => item.id === reportId);
+  if (!report) return;
+
+  if (!window.jspdf?.jsPDF) {
+    alert("Library PDF belum termuat. Cek koneksi internet lalu coba lagi.");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const fileName = `laporan-qc-${safeFileName(report.batchName)}.pdf`;
+
+  doc.setFillColor(18, 53, 47);
+  doc.rect(0, 0, 210, 28, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("CV Putra Farma Yogyakarta", 16, 12);
+  doc.setFontSize(11);
+  doc.text("Laporan Quality Control", 16, 20);
+
+  doc.setTextColor(32, 36, 44);
+  doc.setFontSize(11);
+  let y = 40;
+  y = addPdfText(doc, "Status", report.status, 16, y);
+  y = addPdfText(doc, "Batch", report.batchName, 16, y + 2);
+  y = addPdfText(doc, "Divisi", report.division, 16, y + 2);
+  y = addPdfText(doc, "Jumlah", `${report.quantity} ${report.unit}`, 16, y + 2);
+  y = addPdfText(doc, "Pelapor", report.reporter, 16, y + 2);
+  y = addPdfText(doc, "Tanggal Input", formatDate(report.createdAt), 16, y + 2);
+  y = addPdfText(doc, "Tanggal ACC", report.reviewedAt ? formatDate(report.reviewedAt) : "-", 16, y + 2);
+
+  y += 6;
+  doc.setDrawColor(217, 222, 231);
+  doc.line(16, y, 194, y);
+  y += 10;
+
+  y = addWrappedSection(doc, "Catatan Divisi", report.note || "-", y);
+  y = addWrappedSection(doc, "Catatan QC", report.qcNote || "-", y + 4);
+
+  doc.setFont("helvetica", "bold");
+  doc.text("Lampiran", 16, y + 4);
+  doc.setFont("helvetica", "normal");
+  const attachmentLines = [
+    `Foto: ${(report.photos || []).length} file`,
+    `Dokumen: ${(report.documents || []).length} file`,
+    ...(report.documents || []).map((item) => `- ${item.name}`),
+  ];
+  doc.text(doc.splitTextToSize(attachmentLines.join("\n"), 178), 16, y + 11);
+  y += 25 + attachmentLines.length * 4;
+
+  if (y > 230) {
+    doc.addPage();
+    y = 24;
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.text("Tanda Tangan QC", 16, y);
+  doc.setFont("helvetica", "normal");
+  if (report.signature) {
+    try {
+      doc.addImage(report.signature, "PNG", 16, y + 6, 70, 26);
+    } catch {
+      doc.text("Tanda tangan tidak bisa dimuat ke PDF.", 16, y + 10);
+    }
+  } else {
+    doc.text("Belum ada tanda tangan.", 16, y + 10);
+  }
+
+  doc.setFontSize(9);
+  doc.setTextColor(102, 112, 133);
+  doc.text(`Dicetak dari aplikasi QC pada ${formatDate(new Date().toISOString())}`, 16, 287);
+  doc.save(fileName);
+}
+
 function openEdit(reportId) {
   const report = reports.find((item) => item.id === reportId);
   if (!report) return;
@@ -890,6 +987,9 @@ reportBoard.addEventListener("click", (event) => {
 
   const previewButton = event.target.closest("[data-preview]");
   if (previewButton) openPreview(previewButton.dataset.preview);
+
+  const pdfButton = event.target.closest("[data-pdf]");
+  if (pdfButton) downloadReportPdf(pdfButton.dataset.pdf);
 
   const deleteButton = event.target.closest("[data-delete]");
   if (deleteButton) deleteReport(deleteButton.dataset.delete);
